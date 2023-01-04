@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
-const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon'
+const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon data'
 const history =  +process.env.HISTORY || (1 * 24 * 60 * 60) // duration in seconds
 
 export default {

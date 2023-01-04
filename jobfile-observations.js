@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
 const ttl = +process.env.TTL || (7 * 24 * 60 * 60)  // duration in seconds
 const history =  parseInt(process.env.HISTORY) || (1 * 24 * 60 * 60) // duration in seconds
-const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon'
+const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon data'
 const variable = process.env.OBJECT_VARIABLE || 'rn'
 const startTime = moment.utc().subtract(history, 'seconds')
 
@@ -122,7 +122,9 @@ export default {
           collection: 'icos-observations',
           indices: [
             { 'properties.stationId': 1 },
+            { [`properties.${variable}`]: 1 },
             { 'properties.stationId': 1, time: -1 },
+            { 'properties.stationId': 1, [`properties.${variable}`]: 1, time: -1 },
             [{ time: 1 }, { expireAfterSeconds: ttl }], // days in s
             { geometry: '2dsphere' }                                                                                                              
           ],

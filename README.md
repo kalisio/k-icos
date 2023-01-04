@@ -24,7 +24,7 @@ The project consists in 2 jobs:
 | Variable | Description |
 |--- | --- |
 | `DB_URL` | The database URL. The default value is `mongodb://127.0.0.1:27017/icos` |
-| `OBJECT_SPEC_FILTER` | A filter used to select only latest data objects containing this pattern. The default value is `radon` |
+| `OBJECT_SPEC_FILTER` | A filter used to select only latest data objects containing this pattern. The default value is `radon data`, could be eg `CO data`, `CO2 data`, `CH4 data` |
 | `HISTORY` | The duration of the observations data history the job has to download. It must be expressed in seconds and the default value is `86 400 000` (1 day) | 
 | `DEBUG` | Enables debug output. Set it to `krawler*` to enable full output. By default it is undefined. |
 
@@ -34,8 +34,8 @@ The project consists in 2 jobs:
 |--- | --- |
 | `DB_URL` | The database URL. The default value is `mongodb://127.0.0.1:27017/icos` |
 | `TTL` | The observations data time to live. It must be expressed in seconds and the default value is `604 800` (7 days) |
-| `OBJECT_SPEC_FILTER` | A filter used to select only latest data objects containing this pattern. The default value is `radon` |
-| `OBJECT_VARIABLE` | The name of the variable contained in the corresponding data objects. The default value is `rn` |
+| `OBJECT_SPEC_FILTER` | A filter used to select only latest data objects containing this pattern. The default value is `radon data`, could be eg `CO data`, `CO2 data`, `CH4 data` |
+| `OBJECT_VARIABLE` | The name of the variable contained in the corresponding data objects. The default value is `rn`, could be eg `co`, `co2`, `ch4` |
 | `HISTORY` | The duration of the observations data history the job has to download. It must be expressed in seconds and the default value is `86 400 000` (1 day) | 
 | `DEBUG` | Enables debug output. Set it to `krawler*` to enable full output. By default it is undefined. |
 
