@@ -69,6 +69,7 @@ export default {
           function: (item) => {
             const { longitude, latitude, altitude, samplingHeight, stationId, stationName, data } = item
             const latestData = _.get(item, 'mostRecentData[0]')
+            if (latestData) console.log('Found previous observation data for station ' + stationId + ' at ' + samplingHeight + 'm')
             let features = []
             _.forEach(data, (record) => {
               const time = moment.utc(record.TIMESTAMP)
@@ -91,8 +92,8 @@ export default {
                 }
               })
             })
-            if (features.length > 0) console.log('Found ' + features.length + ' new observation data for station ' + stationId)
-            else console.log('No new observation data found for station ' + stationId)
+            if (features.length > 0) console.log('Found ' + features.length + ' new observation data for station ' + stationId + ' at ' + samplingHeight + 'm')
+            else console.log('No new observation data found for station ' + stationId + ' at ' + samplingHeight + 'm')
             item.data = features
           }
         },
