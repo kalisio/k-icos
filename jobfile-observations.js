@@ -63,7 +63,7 @@ export default {
       },
       after: {
         readCSV: {
-          headers: true
+          header: true
         },
         apply: {
           function: (item) => {
