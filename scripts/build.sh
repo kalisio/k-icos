@@ -13,7 +13,6 @@ WORKSPACE_DIR="$(dirname "$ROOT_DIR")"
 ##
 
 PUBLISH=false
-
 while getopts "pr" option; do
     case $option in
         p) # publish
