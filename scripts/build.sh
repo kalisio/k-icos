@@ -12,24 +12,23 @@ ROOT_DIR=$(dirname "$THIS_DIR")
 ##
 
 PUBLISH=false
-JOB_NAME="units"
-CI_STEP_NAME="Build"
-while getopts "pr:j:" option; do
+
+while getopts "pr" option; do
     case $option in
         p) # publish
             PUBLISH=true
             ;;
         r) # report outcome to slack
-            CI_STEP_NAME=$OPTARG
-            trap 'slack_ci_report "$ROOT_DIR" "$CI_STEP_NAME" "$?" "$SLACK_WEBHOOK_JOBS"' EXIT
-            ;;
-        j) # setup job name
-            JOB_NAME=$OPTARG
+            load_env_files "$WORKSPACE_DIR/development/common/SLACK_WEBHOOK_JOBS.enc.env"
+            trap 'slack_ci_report "$ROOT_DIR" "$JOB_ID" "$?" "$SLACK_WEBHOOK_JOBS"' EXIT
             ;;
         *)
             ;;
     esac
 done
+
+shift $((OPTIND-1))
+JOB_ID="$1"
 
 ## Init workspace
 ##
@@ -48,19 +47,19 @@ else
     echo "About to build ${JOB} v${VERSION} based on krawler ${KRAWLER_VERSION}..."
 fi
 
-load_env_files "$WORKSPACE_DIR/development/common/kalisio_dockerhub.enc.env" "$WORKSPACE_DIR/development/common/SLACK_WEBHOOK_JOBS.enc.env"
+load_env_files "$WORKSPACE_DIR/development/common/kalisio_dockerhub.enc.env"
 load_value_files "$WORKSPACE_DIR/development/common/KALISIO_DOCKERHUB_PASSWORD.enc.value"
 
 ## Build container
 ##
 
-# Remove trailing @ in module name
+JOB_VARIANT=$(cut -d '_' -f 2 <<< "$JOB_ID")
 IMAGE_NAME="kalisio/$JOB"
 if [[ -z "$GIT_TAG" ]]; then
-    IMAGE_TAG=latest
+    IMAGE_TAG="$JOB_VARIANT-latest"
     KRAWLER_TAG=latest
 else
-    IMAGE_TAG=$VERSION
+    IMAGE_TAG="$JOB_VARIANT-$VERSION"
     KRAWLER_TAG=$KRAWLER_VERSION
 fi
 
@@ -68,14 +67,14 @@ begin_group "Building container ..."
 
 docker login --username "$KALISIO_DOCKERHUB_USERNAME" --password-stdin < "$KALISIO_DOCKERHUB_PASSWORD"
 # DOCKER_BUILDKIT is here to be able to use Dockerfile specific dockerginore (job.Dockerfile.dockerignore)
-DOCKER_BUILDKIT=1 docker build -f dockerfile \
+DOCKER_BUILDKIT=1 docker build \
     --build-arg KRAWLER_TAG=$KRAWLER_TAG \
-    -f dockerfile."$JOB_NAME" \
-    -t "$IMAGE_NAME:$JOB_NAME-$IMAGE_TAG" \
+    -f dockerfile."$JOB_VARIANT" \
+    -t "$IMAGE_NAME:$IMAGE_TAG" \
     "$WORKSPACE_DIR/$JOB"
 
 if [ "$PUBLISH" = true ]; then
-    docker push "$IMAGE_NAME:$JOB_NAME-$IMAGE_TAG"
+    docker push "$IMAGE_NAME:$IMAGE_TAG"
 fi
 
 docker logout
