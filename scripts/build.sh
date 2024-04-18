@@ -13,22 +13,25 @@ WORKSPACE_DIR="$(dirname "$ROOT_DIR")"
 ##
 
 PUBLISH=false
-while getopts "pr" option; do
+JOB_VARIANT=
+WORKFLOW_JOB_ID=
+while getopts "pr:v:" option; do
     case $option in
         p) # publish
             PUBLISH=true
             ;;
         r) # report outcome to slack
+            WORKFLOW_JOB_ID=$OPTARG
             load_env_files "$WORKSPACE_DIR/development/common/SLACK_WEBHOOK_JOBS.enc.env"
-            trap 'slack_ci_report "$ROOT_DIR" "$JOB_ID" "$?" "$SLACK_WEBHOOK_JOBS"' EXIT
+            trap 'slack_ci_report "$ROOT_DIR" "$WORKFLOW_JOB_ID $JOB_VARIANT" "$?" "$SLACK_WEBHOOK_JOBS"' EXIT
+            ;;
+        v)
+            JOB_VARIANT=$OPTARG
             ;;
         *)
             ;;
     esac
 done
-
-shift $((OPTIND-1))
-JOB_ID="$1"
 
 ## Init workspace
 ##
@@ -52,7 +55,6 @@ load_value_files "$WORKSPACE_DIR/development/common/KALISIO_DOCKERHUB_PASSWORD.e
 ## Build container
 ##
 
-JOB_VARIANT=$(cut -d '_' -f 2 <<< "$JOB_ID")
 IMAGE_NAME="kalisio/$JOB"
 if [[ -z "$GIT_TAG" ]]; then
     IMAGE_TAG="$JOB_VARIANT-latest"
