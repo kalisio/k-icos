@@ -33,12 +33,14 @@ while getopts "pr:v:" option; do
     esac
 done
 
-
 ## Init workspace
 ##
 
 load_env_files "$WORKSPACE_DIR/development/common/kalisio_dockerhub.enc.env"
 load_value_files "$WORKSPACE_DIR/development/common/KALISIO_DOCKERHUB_PASSWORD.enc.value"
+
+## Build container
+##
 
 build_job \
     "$ROOT_DIR" \
