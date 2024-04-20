@@ -1,7 +1,7 @@
 # k-icos
 
 [![Latest Release](https://img.shields.io/github/v/tag/kalisio/k-icos?sort=semver&label=latest)](https://github.com/kalisio/k-icos/releases)
-[![Build Status](https://app.travis-ci.com/kalisio/k-icos.svg?branch=master)](https://app.travis-ci.com/kalisio/k-icos)
+[![ci](https://github.com/kalisio/k-icos/actions/workflows/main.yaml/badge.svg)](https://github.com/kalisio/k-icos/actions/workflows/main.yaml)
 
 A [Krawler](https://kalisio.github.io/krawler/) based service to download atmospheric data from the French gelectrical network operated by RTE.
 
