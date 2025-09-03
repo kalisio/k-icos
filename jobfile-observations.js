@@ -2,15 +2,16 @@ import _ from 'lodash'
 import moment from 'moment'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import winston from 'winston'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
-const ttl = +process.env.TTL || (7 * 24 * 60 * 60)  // duration in seconds
-const history =  parseInt(process.env.HISTORY) || (1 * 24 * 60 * 60) // duration in seconds
-const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon data'
-const variable = process.env.OBJECT_VARIABLE || 'rn'
-const startTime = moment.utc().subtract(history, 'seconds')
+const DB_URL = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
+const TTL = +process.env.TTL || (7 * 24 * 60 * 60)  // duration in seconds
+const HISTORY =  parseInt(process.env.HISTORY) || (1 * 24 * 60 * 60) // duration in seconds
+const SPEC_FILTER = process.env.OBJECT_SPEC_FILTER || 'radon data'
+const VARIABLE = process.env.OBJECT_VARIABLE || 'rn'
+const START_TIME = moment.utc().subtract(HISTORY, 'seconds')
 
 export default {
   id: 'icos-observations',
@@ -46,7 +47,7 @@ export default {
               $match: {
                 'properties.samplingHeight': '<%= samplingHeight %>',
                 'properties.stationId': '<%= stationId %>',
-                [`properties.${variable}`]: { $exists: true }
+                [`properties.${VARIABLE}`]: { $exists: true }
               }
             },
             { $sort: { time: -1 } },
@@ -61,46 +62,57 @@ export default {
           allowDiskUse: true
         }
       },
-      after: {
-        readCSV: {
-          header: true
-        },
-        apply: {
-          function: (item) => {
-            const { longitude, latitude, altitude, samplingHeight, stationId, stationName, data } = item
-            const latestData = _.get(item, 'mostRecentData[0]')
-            if (latestData) console.log('Found previous observation data for station ' + stationId + ' at ' + samplingHeight + 'm')
-            let features = []
-            _.forEach(data, (record) => {
-              const time = moment.utc(record.TIMESTAMP)
-              // Check if newer
-              if (latestData && time.isSameOrBefore(moment.utc(latestData.time))) return
-              // If so push it
-              features.push({
-                time: time.toDate(),
-                level: samplingHeight,
-                type: 'Feature',
-                geometry: {
-                  type: 'Point',
-                  coordinates: [longitude, latitude, altitude + samplingHeight]
-                },
-                properties: {
-                  stationId,
-                  stationName,
-                  samplingHeight,
-                  [variable]: _.toNumber(record[variable])
-                }
-              })
+    after: {
+      readCSV: {
+        header: true
+      },
+      log: (logger, item) => {
+        const stationId = item.stationId
+        const samplingHeight = item.samplingHeight
+        const latestData = _.get(item, 'mostRecentData[0]')
+        if (latestData) {
+          logger.info(`Found previous observation data for station ${stationId} at ${samplingHeight}m`)
+        }
+        const n = Array.isArray(item.data) ? item.data.length : 0
+        if (n > 0) {
+          logger.info(`Found ${n} new observation data for station ${stationId} at ${samplingHeight}m`)
+        } else {
+          logger.info(`No new observation data found for station ${stationId} at ${samplingHeight}m`)
+        }
+      },
+      apply: {
+        function: (item) => {
+          const { longitude, latitude, altitude, samplingHeight, stationId, stationName, data } = item
+          const latestData = _.get(item, 'mostRecentData[0]')         
+          let features = []
+          _.forEach(data, (record) => {
+            const time = moment.utc(record.TIMESTAMP)
+            // Check if newer
+            if (latestData && time.isSameOrBefore(moment.utc(latestData.time))) return
+            // If so push it
+            features.push({
+              time: time.toDate(),
+              level: samplingHeight,
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [longitude, latitude, altitude + samplingHeight]
+              },
+              properties: {
+                stationId,
+                stationName,
+                samplingHeight,
+                [VARIABLE]: _.toNumber(record[VARIABLE])
+              }
             })
-            if (features.length > 0) console.log('Found ' + features.length + ' new observation data for station ' + stationId + ' at ' + samplingHeight + 'm')
-            else console.log('No new observation data found for station ' + stationId + ' at ' + samplingHeight + 'm')
-            item.data = features
-          }
-        },
-        writeMongoCollection: {
-          collection: 'icos-observations',
-          chunkSize: 256
-        },
+          })
+          item.data = features
+        }
+      },
+      writeMongoCollection: {
+        collection: 'icos-observations',
+        chunkSize: 256
+      },
         clearOutputs: {}
       }
     },
@@ -113,19 +125,28 @@ export default {
           id: 'fs', options: { path: __dirname }
         }],
         connectMongo: {
-          url: dbUrl,
+          url: DB_URL,
           // Required so that client is forwarded from job to tasks
           clientPath: 'taskTemplate.client'
+        },
+        createLogger: {
+          loggerPath: 'taskTemplate.logger',
+          Console: {
+            format: winston.format.printf(log =>
+              winston.format.colorize().colorize(log.level, `${log.level}: ${log.message}`)
+            ),
+            level: 'verbose'
+          }
         },
         createMongoCollection: {
           clientPath: 'taskTemplate.client',
           collection: 'icos-observations',
           indices: [
             { 'properties.stationId': 1 },
-            { [`properties.${variable}`]: 1 },
+            { [`properties.${VARIABLE}`]: 1 },
             { 'properties.stationId': 1, time: -1 },
-            { 'properties.stationId': 1, [`properties.${variable}`]: 1, time: -1 },
-            [{ time: 1 }, { expireAfterSeconds: ttl }], // days in s
+            { 'properties.stationId': 1, [`properties.${VARIABLE}`]: 1, time: -1 },
+            [{ time: 1 }, { expireAfterSeconds: TTL }], // days in s
             { geometry: '2dsphere' }                                                                                                              
           ],
         },
@@ -155,8 +176,8 @@ export default {
                     ?station cpmeta:hasStationId ?stationId .
                     ?station cpmeta:hasName ?stationName .
                     ?specUri rdfs:label ?spec .
-                    filter contains(?spec, "${specFilter}")
-                    filter (?submTime > "${moment.utc().subtract(history, 'seconds').format()}"^^xsd:dateTime)
+                    filter contains(?spec, "${SPEC_FILTER}")
+                    filter (?submTime > "${moment.utc().subtract(HISTORY, 'seconds').format()}"^^xsd:dateTime)
                   }
                   order by desc(?submTime)`,
             type: 'JSON'
@@ -193,11 +214,17 @@ export default {
         disconnectMongo: {
           clientPath: 'taskTemplate.client'
         },
+        removeLogger: {
+          loggerPath: 'taskTemplate.logger'
+        },
         removeStores: [ 'memory', 'fs' ]
       },
       error: {
         disconnectMongo: {
           clientPath: 'taskTemplate.client'
+        },
+        removeLogger: {
+          loggerPath: 'taskTemplate.logger'
         },
         removeStores: [ 'memory', 'fs' ]
       }

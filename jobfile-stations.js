@@ -4,9 +4,9 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
-const specFilter = process.env.OBJECT_SPEC_FILTER || 'radon data'
-const history =  +process.env.HISTORY || (1 * 24 * 60 * 60) // duration in seconds
+const DB_URL = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
+const SPEC_FILTER = process.env.OBJECT_SPEC_FILTER || 'radon data'
+const HISTORY =  +process.env.HISTORY || (1 * 24 * 60 * 60) // duration in seconds
 
 export default {
   id: 'icos-stations',
@@ -39,8 +39,8 @@ export default {
               ?station cpmeta:hasStationId ?stationId .
               ?station cpmeta:hasName ?stationName .
               ?specUri rdfs:label ?spec .
-              filter contains(?spec, "${specFilter}")
-              filter (?submTime > "${moment.utc().subtract(history, 'seconds').format()}"^^xsd:dateTime)
+              filter contains(?spec, "${SPEC_FILTER}")
+              filter (?submTime > "${moment.utc().subtract(HISTORY, 'seconds').format()}"^^xsd:dateTime)
             }
             order by desc(?submTime)`,
       type: 'JSON'
@@ -81,7 +81,7 @@ export default {
           id: 'fs', options: { path: __dirname }
         }],
         connectMongo: {
-          url: dbUrl,
+          url: DB_URL,
           // Required so that client is forwarded from job to tasks
           clientPath: 'taskTemplate.client'
         },
