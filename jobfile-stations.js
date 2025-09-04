@@ -2,6 +2,7 @@ import _ from 'lodash'
 import moment from 'moment'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import winston from 'winston'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DB_URL = process.env.DB_URL || 'mongodb://127.0.0.1:27017/icos'
@@ -62,6 +63,7 @@ export default {
             pick: ['longitude', 'latitude', 'altitude', 'stationId', 'stationName']
           }
         },
+        log: (logger, items) => { logger.info(`Found ${items.data.length} stations`) },
         convertToGeoJson: {
         },
         updateMongoCollection: {
@@ -70,7 +72,7 @@ export default {
           upsert: true,
           chunkSize: 256
         },
-        clearData: {}
+        clearData: {},
       }
     },
     jobs: {
@@ -80,6 +82,13 @@ export default {
         }, {
           id: 'fs', options: { path: __dirname }
         }],
+        createLogger: {
+          loggerPath: 'taskTemplate.logger',
+          Console: {
+            format: winston.format.printf(log => winston.format.colorize().colorize(log.level, `${log.level}: ${log.message}`)),
+            level: 'verbose'
+          }
+        },
         connectMongo: {
           url: DB_URL,
           // Required so that client is forwarded from job to tasks
@@ -98,11 +107,17 @@ export default {
         disconnectMongo: {
           clientPath: 'taskTemplate.client'
         },
+        removeLogger: {
+          loggerPath: 'taskTemplate.logger'
+        },
         removeStores: [ 'memory', 'fs' ]
       },
       error: {
         disconnectMongo: {
           clientPath: 'taskTemplate.client'
+        },
+        removeLogger: {
+          loggerPath: 'taskTemplate.logger'
         },
         removeStores: [ 'memory', 'fs' ]
       }

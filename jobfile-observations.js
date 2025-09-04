@@ -62,57 +62,51 @@ export default {
           allowDiskUse: true
         }
       },
-    after: {
-      readCSV: {
-        header: true
-      },
-      log: (logger, item) => {
-        const stationId = item.stationId
-        const samplingHeight = item.samplingHeight
-        const latestData = _.get(item, 'mostRecentData[0]')
-        if (latestData) {
-          logger.info(`Found previous observation data for station ${stationId} at ${samplingHeight}m`)
-        }
-        const n = Array.isArray(item.data) ? item.data.length : 0
-        if (n > 0) {
-          logger.info(`Found ${n} new observation data for station ${stationId} at ${samplingHeight}m`)
-        } else {
-          logger.info(`No new observation data found for station ${stationId} at ${samplingHeight}m`)
-        }
-      },
-      apply: {
-        function: (item) => {
-          const { longitude, latitude, altitude, samplingHeight, stationId, stationName, data } = item
-          const latestData = _.get(item, 'mostRecentData[0]')         
-          let features = []
-          _.forEach(data, (record) => {
-            const time = moment.utc(record.TIMESTAMP)
-            // Check if newer
-            if (latestData && time.isSameOrBefore(moment.utc(latestData.time))) return
-            // If so push it
-            features.push({
-              time: time.toDate(),
-              level: samplingHeight,
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [longitude, latitude, altitude + samplingHeight]
-              },
-              properties: {
-                stationId,
-                stationName,
-                samplingHeight,
-                [VARIABLE]: _.toNumber(record[VARIABLE])
-              }
+      after: {
+        readCSV: {
+          header: true
+        },
+        apply: {
+          function: (item) => {
+            const { longitude, latitude, altitude, samplingHeight, stationId, stationName, data } = item
+            const latestData = _.get(item, 'mostRecentData[0]')
+            let features = []
+            _.forEach(data, (record) => {
+              const time = moment.utc(record.TIMESTAMP)
+              // Check if newer
+              if (latestData && time.isSameOrBefore(moment.utc(latestData.time))) return
+              // If so push it
+              features.push({
+                time: time.toDate(),
+                level: samplingHeight,
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [longitude, latitude, altitude + samplingHeight]
+                },
+                properties: {
+                  stationId,
+                  stationName,
+                  samplingHeight,
+                  [VARIABLE]: _.toNumber(record[VARIABLE])
+                }
+              })
             })
-          })
-          item.data = features
-        }
-      },
-      writeMongoCollection: {
-        collection: 'icos-observations',
-        chunkSize: 256
-      },
+            if (features.length > 0) console.log('Found ' + features.length + ' new observation data for station ' + stationId + ' at ' + samplingHeight + 'm')
+            else console.log('No new observation data found for station ' + stationId + ' at ' + samplingHeight + 'm')
+            item.data = features
+            item.latestData = latestData
+          }
+        },
+        log: (logger, item) => {
+          if (item.latestData) {
+            logger.info(`Found previous observation data for station ${item.stationId} at ${item.samplingHeight}m`)
+          }
+        },
+        writeMongoCollection: {
+          collection: 'icos-observations',
+          chunkSize: 256
+        },
         clearOutputs: {}
       }
     },
@@ -132,9 +126,7 @@ export default {
         createLogger: {
           loggerPath: 'taskTemplate.logger',
           Console: {
-            format: winston.format.printf(log =>
-              winston.format.colorize().colorize(log.level, `${log.level}: ${log.message}`)
-            ),
+            format: winston.format.printf(log => winston.format.colorize().colorize(log.level, `${log.level}: ${log.message}`)),
             level: 'verbose'
           }
         },
