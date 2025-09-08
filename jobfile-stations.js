@@ -77,6 +77,10 @@ export default {
     },
     jobs: {
       before: {
+        printEnv: {
+          SPEC_FILTER,
+          HISTORY
+        },
         createStores: [{
           id: 'memory'
         }, {
