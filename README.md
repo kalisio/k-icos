@@ -2,6 +2,8 @@
 
 [![Latest Release](https://img.shields.io/github/v/tag/kalisio/k-icos?sort=semver&label=latest)](https://github.com/kalisio/k-icos/releases)
 [![CI](https://github.com/kalisio/k-icos/actions/workflows/main.yaml/badge.svg)](https://github.com/kalisio/k-icos/actions/workflows/main.yaml)
+[![Maintainability Issues](https://sonar.portal.kalisio.com/api/project_badges/measure?project=kalisio-k-icos&metric=software_quality_maintainability_issues&token=sqb_3891e8f9a97b99768c44c00665bcf366a7662998)](https://sonar.portal.kalisio.com/dashboard?id=kalisio-k-icos)
+[![Coverage](https://sonar.portal.kalisio.com/api/project_badges/measure?project=kalisio-k-icos&metric=coverage&token=sqb_3891e8f9a97b99768c44c00665bcf366a7662998)](https://sonar.portal.kalisio.com/dashboard?id=kalisio-k-icos)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A [Krawler](https://kalisio.github.io/krawler/) based service to download atmospheric data from the French gelectrical network operated by RTE.
