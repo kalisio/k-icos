@@ -10,7 +10,7 @@ A [Krawler](https://kalisio.github.io/krawler/) based service to download atmosp
 
 ## Description
 
-The **k-icos** job allow to scrape atmospheric data from the [RTE API]. The downloaded data are stored within a [MongoDB](https://www.mongodb.com/) database and more precisely in 2 collections:
+The **k-icos** job allow to scrape atmospheric data from the [ICOS API](https://www.icos-cp.eu/). The downloaded data are stored within a [MongoDB](https://www.mongodb.com/) database and more precisely in 2 collections:
 * the `icos-observations` collection stores the observation data
 * the `icos-stations` collection stores the station positions
 
